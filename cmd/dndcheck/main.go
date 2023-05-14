@@ -16,12 +16,17 @@ var mapSigs = map[string]string{
 }
 
 func main() {
-	root := flag.String("root", "", "root directory to validate")
+	l := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
+	root := flag.String("root", "", "root directory to validate")
 	flag.Parse()
 
+	if *root == "" {
+		l.Error("please specify --root")
+		os.Exit(1)
+	}
+
 	rootFS := os.DirFS(*root)
-	l := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
 	l.Info("validating...",
 		"root", *root,
