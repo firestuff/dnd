@@ -2,13 +2,11 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"io/fs"
 	"os"
-	"path/filepath"
-	"sort"
 	"strings"
 
+	"github.com/firestuff/dnd/internal"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
 )
@@ -56,7 +54,7 @@ func validateMaps(l *slog.Logger, mapsFS fs.FS) bool {
 }
 
 func validateMap(l *slog.Logger, mapFS fs.FS) bool {
-	sig := getDirSig(mapFS)
+	sig := internal.DirSig(mapFS)
 
 	t := mapSigs[sig]
 	if t == "" {
@@ -70,32 +68,4 @@ func validateMap(l *slog.Logger, mapFS fs.FS) bool {
 		"source", t,
 	)
 	return true
-}
-
-func getDirSig(root fs.FS) string {
-	sigSet := map[string]bool{}
-
-	fs.WalkDir(root, ".", func(path string, entry fs.DirEntry, err error) error {
-		if entry.IsDir() {
-			return nil
-		}
-
-		if strings.HasPrefix(entry.Name(), ".") {
-			return nil
-		}
-
-		sigSet[getPathSig(path)] = true
-
-		return nil
-	})
-
-	sigs := lo.Keys(sigSet)
-	sort.Strings(sigs)
-
-	return strings.Join(sigs, ";")
-}
-
-func getPathSig(path string) string {
-	parts := strings.Split(filepath.Base(path), ".")
-	return fmt.Sprintf("%s/*.%s", filepath.Dir(path), lo.Must(lo.Last(parts)))
 }
