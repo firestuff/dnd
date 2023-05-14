@@ -14,23 +14,53 @@ import (
 )
 
 var removeWords = map[string]bool{
-	"Diamond":       true,
-	"Gridless":      true,
-	"High":          true,
-	"PSD":           true,
-	"Res":           true,
-	"Roll20+Tokens": true,
+	"1":             true,
+	"2":             true,
+	"diamond":       true,
+	"gridless":      true,
+	"high":          true,
+	"psd":           true,
+	"res":           true,
+	"roll20+tokens": true,
 }
 
 var actions = map[string]string{
-	"./*.psd":                   "Maps/{MAPNAME}",
-	"*/Gridless/*.jpg":          "Maps/{MAPNAME}",
-	"*/High Res/Gridless/*.jpg": "Maps/{MAPNAME}",
-	"*/High Res/Grid/*.jpg":     "{SKIP}",
-	"*/Creature Tokens/*.png":   "Creatures",
-	"*/Map Tokens/*.png":        "Maps/{MAPNAME}/Objects",
-	"*/Roll20/Grid/*.jpg":       "{SKIP}",
-	"*/Roll20/Gridless/*.jpg":   "{SKIP}",
+	"./*.psd":                            "Maps/{MAPNAME}",
+	"*/gridless/*.jpg":                   "Maps/{MAPNAME}",
+	"*/high res/gridless/*.jpg":          "Maps/{MAPNAME}",
+	"*/high res/gridless/*.png":          "Maps/{MAPNAME}",
+	"*/high res/gridless/attic/*.jpg":    "Maps/{MAPNAME}",
+	"*/high res/gridless/attic/*.png":    "Maps/{MAPNAME}",
+	"*/high res/gridless/basement/*.jpg": "Maps/{MAPNAME}",
+	"*/high res/gridless/basement/*.png": "Maps/{MAPNAME}",
+	"*/high res/gridless/floor 1/*.jpg":  "Maps/{MAPNAME}",
+	"*/high res/gridless/floor 1/*.png":  "Maps/{MAPNAME}",
+	"*/high res/gridless/floor 2/*.jpg":  "Maps/{MAPNAME}",
+	"*/high res/gridless/floor 2/*.png":  "Maps/{MAPNAME}",
+	"*/high res/grid/*.jpg":              "{SKIP}",
+	"*/creature tokens/*.png":            "Creatures",
+	"*/creature tokens/variants/*.png":   "Creatures",
+	"*/map tokens/*.png":                 "Maps/{MAPNAME}/Objects",
+	"*/roll20/grid/*.jpg":                "{SKIP}",
+	"*/roll20/grid/*.png":                "{SKIP}",
+	"*/roll20/grid/attic/*.jpg":          "{SKIP}",
+	"*/roll20/grid/attic/*.png":          "{SKIP}",
+	"*/roll20/grid/basement/*.jpg":       "{SKIP}",
+	"*/roll20/grid/basement/*.png":       "{SKIP}",
+	"*/roll20/grid/floor 1/*.jpg":        "{SKIP}",
+	"*/roll20/grid/floor 1/*.png":        "{SKIP}",
+	"*/roll20/grid/floor 2/*.jpg":        "{SKIP}",
+	"*/roll20/grid/floor 2/*.png":        "{SKIP}",
+	"*/roll20/gridless/*.jpg":            "{SKIP}",
+	"*/roll20/gridless/*.png":            "{SKIP}",
+	"*/roll20/gridless/attic/*.jpg":      "{SKIP}",
+	"*/roll20/gridless/attic/*.png":      "{SKIP}",
+	"*/roll20/gridless/basement/*.jpg":   "{SKIP}",
+	"*/roll20/gridless/basement/*.png":   "{SKIP}",
+	"*/roll20/gridless/floor 1/*.jpg":    "{SKIP}",
+	"*/roll20/gridless/floor 1/*.png":    "{SKIP}",
+	"*/roll20/gridless/floor 2/*.jpg":    "{SKIP}",
+	"*/roll20/gridless/floor 2/*.png":    "{SKIP}",
 }
 
 var root = flag.String("root", "", "root directory to write to")
@@ -75,7 +105,7 @@ func importZIP(l *slog.Logger, path string) bool {
 			continue
 		}
 
-		sig := internal.PathSig(file.Name)
+		sig := strings.ToLower(internal.PathSig(file.Name))
 
 		dst := actions[sig]
 
@@ -125,7 +155,7 @@ func mapName(path string) string {
 	parts := strings.Split(withoutZIP, " ")
 
 	i := len(parts) - 1
-	for i >= 0 && removeWords[parts[i]] {
+	for i >= 0 && removeWords[strings.ToLower(parts[i])] {
 		i--
 	}
 
