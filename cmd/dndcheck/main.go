@@ -4,13 +4,13 @@ import (
 	"flag"
 	"fmt"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 
 	"github.com/samber/lo"
+	"golang.org/x/exp/slog"
 )
 
 var mapSigs = map[string]string{
@@ -22,18 +22,20 @@ func main() {
 
 	flag.Parse()
 
-	if *root == "" {
-		log.Fatal("please specify --root")
-	}
-
-	log.Printf("validating: %s", *root)
-
 	rootFS := os.DirFS(*root)
+	l := slog.New(slog.NewTextHandler(os.Stderr, nil))
 
-	validateMaps(lo.Must(fs.Sub(rootFS, "Maps")))
+	l.Info("validating...",
+		"root", *root,
+	)
+
+	ok := validateMaps(l, lo.Must(fs.Sub(rootFS, "Maps")))
+	if !ok {
+		os.Exit(1)
+	}
 }
 
-func validateMaps(mapsFS fs.FS) {
+func validateMaps(l *slog.Logger, mapsFS fs.FS) bool {
 	entries := lo.Must(mapsFS.(fs.ReadDirFS).ReadDir("."))
 
 	for _, entry := range entries {
@@ -41,22 +43,33 @@ func validateMaps(mapsFS fs.FS) {
 			continue
 		}
 
-		log.Printf("map: %s", entry.Name())
-
-		mapFS := lo.Must(fs.Sub(mapsFS, entry.Name()))
-		validateMap(mapFS)
+		ok := validateMap(
+			l.With("map", entry.Name()),
+			lo.Must(fs.Sub(mapsFS, entry.Name())),
+		)
+		if !ok {
+			return false
+		}
 	}
+
+	return true
 }
 
-func validateMap(mapFS fs.FS) {
+func validateMap(l *slog.Logger, mapFS fs.FS) bool {
 	sig := getDirSig(mapFS)
 
 	t := mapSigs[sig]
 	if t == "" {
-		log.Fatalf("\tunrecognized signature: %s", sig)
+		l.Error("unrecognized signature",
+			"signature", sig,
+		)
+		return false
 	}
 
-	log.Printf("\ttype: %s", t)
+	l.Info("valid map",
+		"source", t,
+	)
+	return true
 }
 
 func getDirSig(root fs.FS) string {
