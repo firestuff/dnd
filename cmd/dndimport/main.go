@@ -8,12 +8,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/fatih/camelcase"
 	"github.com/firestuff/dnd/internal"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
 )
 
 var removeWords = map[string]bool{
+	"+":             true,
 	"1":             true,
 	"2":             true,
 	"diamond":       true,
@@ -21,7 +23,9 @@ var removeWords = map[string]bool{
 	"high":          true,
 	"psd":           true,
 	"res":           true,
+	"roll20":        true,
 	"roll20+tokens": true,
+	"tokens":        true,
 }
 
 var actions = map[string]string{
@@ -37,10 +41,14 @@ var actions = map[string]string{
 	"*/high res/gridless/floor 1/*.png":  "Maps/{MAPNAME}",
 	"*/high res/gridless/floor 2/*.jpg":  "Maps/{MAPNAME}",
 	"*/high res/gridless/floor 2/*.png":  "Maps/{MAPNAME}",
+	"*/high resolution/gridless/*.jpg":   "Maps/{MAPNAME}",
+	"*/grid/*.jpg":                       "{SKIP}",
 	"*/high res/grid/*.jpg":              "{SKIP}",
+	"*/high resolution/grid/*.jpg":       "{SKIP}",
 	"*/creature tokens/*.png":            "Creatures",
 	"*/creature tokens/variants/*.png":   "Creatures",
 	"*/map tokens/*.png":                 "Maps/{MAPNAME}/Objects",
+	"*/tokens/*.png":                     "Maps/{MAPNAME}/Objects",
 	"*/roll20/grid/*.jpg":                "{SKIP}",
 	"*/roll20/grid/*.png":                "{SKIP}",
 	"*/roll20/grid/attic/*.jpg":          "{SKIP}",
@@ -153,6 +161,10 @@ func importZIP(l *slog.Logger, path string) bool {
 func mapName(path string) string {
 	withoutZIP := strings.TrimSuffix(filepath.Base(path), ".zip")
 	parts := strings.Split(withoutZIP, " ")
+
+	if len(parts) == 1 {
+		parts = camelcase.Split(parts[0])
+	}
 
 	i := len(parts) - 1
 	for i >= 0 && removeWords[strings.ToLower(parts[i])] {
