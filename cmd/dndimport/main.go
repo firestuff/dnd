@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/fatih/camelcase"
 	"github.com/firestuff/dnd/internal"
@@ -16,11 +17,15 @@ import (
 
 var removeWords = map[string]bool{
 	"+":             true,
+	"-":             true,
+	"-diamond":      true,
 	"1":             true,
 	"2":             true,
 	"diamond":       true,
 	"gridless":      true,
 	"high":          true,
+	"high-res":      true,
+	"part":          true,
 	"psd":           true,
 	"res":           true,
 	"roll20":        true,
@@ -29,8 +34,23 @@ var removeWords = map[string]bool{
 }
 
 var actions = map[string]string{
+	"creature tokens/*.png":              "Creatures",
+	"grid/*.jpg":                         "{SKIP}",
+	"grid/grid 1/*.jpg":                  "{SKIP}",
+	"grid/grid 2/*.jpg":                  "{SKIP}",
+	"gridless/*.jpg":                     "Maps/{MAPNAME}",
+	"gridless/extra color/*.jpg":         "Maps/{MAPNAME}",
+	"gridless/line/*.jpg":                "Maps/{MAPNAME}",
+	"gridless/normal/*.jpg":              "Maps/{MAPNAME}",
+	"line/*.jpg":                         "Maps/{MAPNAME}",
+	"map tokens/*.png":                   "Maps/{MAPNAME}/Objects",
+	"tokens/*.png":                       "Maps/{MAPNAME}/Objects",
 	"./*.psd":                            "Maps/{MAPNAME}",
+	"*/high resolution/*.jpg":            "Maps/{MAPNAME}", // Trust that it's gridless
+	"*/high resolution/*.png":            "Maps/{MAPNAME}", // Trust that it's gridless
 	"*/gridless/*.jpg":                   "Maps/{MAPNAME}",
+	"*/high-res/gridless/*.jpg":          "Maps/{MAPNAME}",
+	"*/high-res/gridless/*.png":          "Maps/{MAPNAME}",
 	"*/high res/gridless/*.jpg":          "Maps/{MAPNAME}",
 	"*/high res/gridless/*.png":          "Maps/{MAPNAME}",
 	"*/high res/gridless/attic/*.jpg":    "Maps/{MAPNAME}",
@@ -43,13 +63,18 @@ var actions = map[string]string{
 	"*/high res/gridless/floor 2/*.png":  "Maps/{MAPNAME}",
 	"*/high resolution/gridless/*.jpg":   "Maps/{MAPNAME}",
 	"*/grid/*.jpg":                       "{SKIP}",
+	"*/gridded/*.jpg":                    "{SKIP}",
+	"*/high-res/grid/*.jpg":              "{SKIP}",
 	"*/high res/grid/*.jpg":              "{SKIP}",
 	"*/high resolution/grid/*.jpg":       "{SKIP}",
 	"*/creature tokens/*.png":            "Creatures",
 	"*/creature tokens/variants/*.png":   "Creatures",
 	"*/map tokens/*.png":                 "Maps/{MAPNAME}/Objects",
 	"*/tokens/*.png":                     "Maps/{MAPNAME}/Objects",
+	"*/roll20/*.jpg":                     "{SKIP}",
+	"*/roll20/*.png":                     "{SKIP}",
 	"*/roll20/grid/*.jpg":                "{SKIP}",
+	"*/roll20/gridded/*.jpg":             "{SKIP}",
 	"*/roll20/grid/*.png":                "{SKIP}",
 	"*/roll20/grid/attic/*.jpg":          "{SKIP}",
 	"*/roll20/grid/attic/*.png":          "{SKIP}",
@@ -138,7 +163,7 @@ func importZIP(l *slog.Logger, path string) bool {
 		}
 
 		dst = strings.ReplaceAll(dst, "{MAPNAME}", name)
-		dst = filepath.Join(*root, dst, filepath.Base(file.Name))
+		dst = printable(filepath.Join(*root, dst, filepath.Base(file.Name)))
 
 		l.Info("COPY",
 			"src", file.Name,
@@ -171,5 +196,18 @@ func mapName(path string) string {
 		i--
 	}
 
+	if len(parts) == 0 {
+		panic(path)
+	}
+
 	return strings.Join(parts[:i+1], " ")
+}
+
+func printable(in string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsPrint(r) {
+			return r
+		}
+		return -1
+	}, in)
 }
