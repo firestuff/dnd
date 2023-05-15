@@ -14,6 +14,7 @@ import (
 var mapSigs = map[string]string{
 	"./*.jpg;./*.psd;Objects/*.png":         "patreon-drmapzo-diamond",
 	"./*.jpg;./*.png;./*.psd;Objects/*.png": "patreon-drmapzo-diamond",
+	"./*.jpg;./*.webp;Objects/*.png":        "patreon-morvoldpress-tier2",
 }
 
 func main() {
