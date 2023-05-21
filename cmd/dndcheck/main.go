@@ -12,9 +12,8 @@ import (
 )
 
 var mapSigs = map[string]string{
-	"./*.jpg;./*.psd;Objects/*.png":         "patreon-drmapzo-diamond",
-	"./*.jpg;./*.png;./*.psd;Objects/*.png": "patreon-drmapzo-diamond",
-	"./*.jpg;./*.webp;Objects/*.png":        "patreon-morvoldpress-tier2",
+	"./*.jpg;Objects/*.png":          "drmapzo-diamond",
+	"./*.jpg;./*.png;Objects/*.png":  "drmapzo-diamond",
 }
 
 func main() {
@@ -34,14 +33,14 @@ func main() {
 		"root", *root,
 	)
 
-	ok := validateMaps(l, lo.Must(fs.Sub(rootFS, "Maps")))
+	ok := validateMaps(l, rootFS)
 	if !ok {
 		os.Exit(1)
 	}
 }
 
 func validateMaps(l *slog.Logger, mapsFS fs.FS) bool {
-	entries := lo.Must(mapsFS.(fs.ReadDirFS).ReadDir("."))
+	entries := lo.Must(fs.ReadDir(mapsFS, "."))
 
 	for _, entry := range entries {
 		if strings.HasPrefix(entry.Name(), ".") {
