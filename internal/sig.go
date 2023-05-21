@@ -35,5 +35,9 @@ func DirSig(root fs.FS) string {
 
 func PathSig(path string) string {
 	parts := strings.Split(filepath.Base(path), ".")
-	return fmt.Sprintf("%s/*.%s", filepath.Dir(path), lo.Must(lo.Last(parts)))
+	if len(parts) == 1 {
+		return fmt.Sprintf("%s/%s", filepath.Dir(path), parts[0])
+	} else {
+		return fmt.Sprintf("%s/*.%s", filepath.Dir(path), lo.Must(lo.Last(parts)))
+	}
 }

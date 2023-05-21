@@ -14,6 +14,10 @@ import (
 var mapSigs = map[string]string{
 	"./*.jpg;Objects/*.png":          "drmapzo-diamond",
 	"./*.jpg;./*.png;Objects/*.png":  "drmapzo-diamond",
+	"./*.jpg": "czepeku-$5",
+	"./*.png": "czepeku-$5",
+	"./*.jpg;./*.png": "czepeku-$5",
+	"./*.jpg;Objects/*.jpg":          "czepeku-$5",
 }
 
 func main() {

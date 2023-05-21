@@ -11,6 +11,7 @@ import (
 
 	"github.com/fatih/camelcase"
 	"github.com/firestuff/dnd/internal"
+	"github.com/gobwas/glob"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slog"
 )
@@ -18,14 +19,28 @@ import (
 var removeWords = map[string]bool{
 	"+":             true,
 	"-":             true,
+	"":              true,
 	"-diamond":      true,
 	"1":             true,
+	"1)":            true,
 	"2":             true,
+	"2)":            true,
+	"$5":            true,
+	"rewards":       true,
 	"diamond":       true,
 	"gridless":      true,
+	"(gridless)":    true,
+	"(gridless":     true,
 	"high":          true,
 	"high-res":      true,
 	"part":          true,
+	"pt":            true,
+	"pt.":           true,
+	"pt.1":          true,
+	"pt.1)":         true,
+	"pt.2":          true,
+	"pt.2)":         true,
+	"pt.3":          true,
 	"psd":           true,
 	"res":           true,
 	"roll20":        true,
@@ -33,85 +48,50 @@ var removeWords = map[string]bool{
 	"support":       true,
 	"tier":          true,
 	"tokens":        true,
+	"(tokens)":      true,
+	"rewards(1)":    true,
+	"transparent":   true,
+	"pngs":          true,
 }
 
 var actions = map[string]string{
-	"2nd floors/*.png":                      "Maps/{MAPNAME}/Objects",
-	"assets & tiles/*.png":                  "Maps/{MAPNAME}/Objects",
-	"assets & tiles/rooftops/*.png":         "Maps/{MAPNAME}/Objects",
-	"assets & tokens/*.png":                 "Maps/{MAPNAME}/Objects",
-	"assets & tokens/rooftops/*.png":        "Maps/{MAPNAME}/Objects",
-	"assets & tokens/rooftop_tiles/*.png":   "Maps/{MAPNAME}/Objects",
-	"assets & tokens/tiles or tokens/*.png": "Maps/{MAPNAME}/Objects",
-	"creature tokens/*.png":                 "Creatures",
-	"grid/*.jpg":                            "{SKIP}",
-	"grid/grid 1/*.jpg":                     "{SKIP}",
-	"grid/grid 2/*.jpg":                     "{SKIP}",
-	"gridded/*.dd2vtt":                      "{SKIP}",
-	"gridded/*.jpg":                         "{SKIP}",
-	"gridded/*.webp":                        "{SKIP}",
-	"gridless/*.jpg":                        "Maps/{MAPNAME}",
-	"gridless/extra color/*.jpg":            "Maps/{MAPNAME}",
-	"gridless/line/*.jpg":                   "Maps/{MAPNAME}",
-	"gridless/normal/*.jpg":                 "Maps/{MAPNAME}",
-	"line/*.jpg":                            "Maps/{MAPNAME}",
-	"map tokens/*.png":                      "Maps/{MAPNAME}/Objects",
-	"sloop vessel/*.png":                    "Maps/{MAPNAME}/Objects",
-	"tokens/*.png":                          "Maps/{MAPNAME}/Objects",
-	"ungridded/*.dd2vtt":                    "{SKIP}",
-	"ungridded/*.jpg":                       "Maps/{MAPNAME}",
-	"ungridded/*.webp":                      "Maps/{MAPNAME}",
-	"./*.jpg":                               "Maps/{MAPNAME}",
-	"./*.psd":                               "Maps/{MAPNAME}",
-	"./*.pdf":                               "{SKIP}",
-	"*/high resolution/*.jpg":               "Maps/{MAPNAME}", // Trust that it's gridless
-	"*/high resolution/*.png":               "Maps/{MAPNAME}", // Trust that it's gridless
-	"*/gridless/*.jpg":                      "Maps/{MAPNAME}",
-	"*/high-res/gridless/*.jpg":             "Maps/{MAPNAME}",
-	"*/high-res/gridless/*.png":             "Maps/{MAPNAME}",
-	"*/high res/gridless/*.jpg":             "Maps/{MAPNAME}",
-	"*/high res/gridless/*.png":             "Maps/{MAPNAME}",
-	"*/high res/gridless/attic/*.jpg":       "Maps/{MAPNAME}",
-	"*/high res/gridless/attic/*.png":       "Maps/{MAPNAME}",
-	"*/high res/gridless/basement/*.jpg":    "Maps/{MAPNAME}",
-	"*/high res/gridless/basement/*.png":    "Maps/{MAPNAME}",
-	"*/high res/gridless/floor 1/*.jpg":     "Maps/{MAPNAME}",
-	"*/high res/gridless/floor 1/*.png":     "Maps/{MAPNAME}",
-	"*/high res/gridless/floor 2/*.jpg":     "Maps/{MAPNAME}",
-	"*/high res/gridless/floor 2/*.png":     "Maps/{MAPNAME}",
-	"*/high resolution/gridless/*.jpg":      "Maps/{MAPNAME}",
-	"*/grid/*.jpg":                          "{SKIP}",
-	"*/gridded/*.jpg":                       "{SKIP}",
-	"*/high-res/grid/*.jpg":                 "{SKIP}",
-	"*/high res/grid/*.jpg":                 "{SKIP}",
-	"*/high resolution/grid/*.jpg":          "{SKIP}",
-	"*/creature tokens/*.png":               "Creatures",
-	"*/creature tokens/variants/*.png":      "Creatures",
-	"*/map tokens/*.png":                    "Maps/{MAPNAME}/Objects",
-	"*/tokens/*.png":                        "Maps/{MAPNAME}/Objects",
-	"*/roll20/*.jpg":                        "{SKIP}",
-	"*/roll20/*.png":                        "{SKIP}",
-	"*/roll20/grid/*.jpg":                   "{SKIP}",
-	"*/roll20/gridded/*.jpg":                "{SKIP}",
-	"*/roll20/grid/*.png":                   "{SKIP}",
-	"*/roll20/grid/attic/*.jpg":             "{SKIP}",
-	"*/roll20/grid/attic/*.png":             "{SKIP}",
-	"*/roll20/grid/basement/*.jpg":          "{SKIP}",
-	"*/roll20/grid/basement/*.png":          "{SKIP}",
-	"*/roll20/grid/floor 1/*.jpg":           "{SKIP}",
-	"*/roll20/grid/floor 1/*.png":           "{SKIP}",
-	"*/roll20/grid/floor 2/*.jpg":           "{SKIP}",
-	"*/roll20/grid/floor 2/*.png":           "{SKIP}",
-	"*/roll20/gridless/*.jpg":               "{SKIP}",
-	"*/roll20/gridless/*.png":               "{SKIP}",
-	"*/roll20/gridless/attic/*.jpg":         "{SKIP}",
-	"*/roll20/gridless/attic/*.png":         "{SKIP}",
-	"*/roll20/gridless/basement/*.jpg":      "{SKIP}",
-	"*/roll20/gridless/basement/*.png":      "{SKIP}",
-	"*/roll20/gridless/floor 1/*.jpg":       "{SKIP}",
-	"*/roll20/gridless/floor 1/*.png":       "{SKIP}",
-	"*/roll20/gridless/floor 2/*.jpg":       "{SKIP}",
-	"*/roll20/gridless/floor 2/*.png":       "{SKIP}",
+	"Gridless/*.jpg":                      "Maps/{MAPNAME}",
+	"*/*.png":                             "Maps/{MAPNAME}",
+	"*/*.jpg":                             "Maps/{MAPNAME}",
+	"**ds_store":                          "{SKIP}",
+	"**/*.db":                             "{SKIP}",
+	"**/*.pdf":                            "{SKIP}",
+	"**/*.mp3":                            "{SKIP}",
+	"**/*.zip":                            "{SKIP}",
+	"__macosx/**":                         "{SKIP}",
+	"**/high resolution/*.jpg":            "Maps/{MAPNAME}", // Trust that it's gridless
+	"**/high resolution/*.png":            "Maps/{MAPNAME}", // Trust that it's gridless
+	"**/gridless/*.jpg":                   "Maps/{MAPNAME}",
+	"**/gridless/*.jpeg":                  "Maps/{MAPNAME}",
+	"**/high-res/gridless/*.jpg":          "Maps/{MAPNAME}",
+	"**/high-res/gridless/*.png":          "Maps/{MAPNAME}",
+	"**/high res/gridless/*.jpg":          "Maps/{MAPNAME}",
+	"**/high res/gridless/*.png":          "Maps/{MAPNAME}",
+	"**/high res/gridless/attic/*.jpg":    "Maps/{MAPNAME}",
+	"**/high res/gridless/attic/*.png":    "Maps/{MAPNAME}",
+	"**/high res/gridless/basement/*.jpg": "Maps/{MAPNAME}",
+	"**/high res/gridless/basement/*.png": "Maps/{MAPNAME}",
+	"**/high res/gridless/floor 1/*.jpg":  "Maps/{MAPNAME}",
+	"**/high res/gridless/floor 1/*.png":  "Maps/{MAPNAME}",
+	"**/high res/gridless/floor 2/*.jpg":  "Maps/{MAPNAME}",
+	"**/high res/gridless/floor 2/*.png":  "Maps/{MAPNAME}",
+	"**/high resolution/gridless/*.jpg":   "Maps/{MAPNAME}",
+	"**/grid/*.jpg":                       "{SKIP}",
+	"**/gridded/*.jpg":                    "{SKIP}",
+	"**/high-res/grid/*.jpg":              "{SKIP}",
+	"**/high res/grid/*.jpg":              "{SKIP}",
+	"**/high resolution/grid/*.jpg":       "{SKIP}",
+	"**/creature tokens/*.png":            "Creatures",
+	"**/creature tokens/variants/*.png":   "Creatures",
+	"**/map tokens/*.png":                 "Maps/{MAPNAME}/Objects",
+	"**/tokens/*.png":                     "Maps/{MAPNAME}/Objects",
+	"**/tokens/*.jpg":                     "Maps/{MAPNAME}/Objects",
+	"**/roll20/**":                        "{SKIP}",
 }
 
 var root = flag.String("root", "", "root directory to write to")
@@ -157,12 +137,14 @@ func importZIP(l *slog.Logger, path string) bool {
 		}
 
 		sig := strings.ToLower(internal.PathSig(file.Name))
+		dst := ""
 
-		dst := actions[sig]
-
-		if dst == "" {
-			parts := strings.Split(sig, "/")
-			dst = actions["*/"+filepath.Join(parts[1:]...)]
+		for pattern, action := range actions {
+			g := glob.MustCompile(pattern)
+			if g.Match(sig) {
+				dst = action
+				break
+			}
 		}
 
 		if dst == "" {
@@ -210,7 +192,7 @@ func mapName(path string) string {
 	}
 
 	i := len(parts) - 1
-	for i >= 0 && removeWords[strings.ToLower(parts[i])] {
+	for i >= 0 && (removeWords[strings.ToLower(parts[i])] || strings.HasPrefix(parts[i], "[")) {
 		i--
 	}
 
